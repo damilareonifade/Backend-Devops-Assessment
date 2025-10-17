@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: upi-os-cron
+  name: upi-os-cron
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: upi-os-cron
+  template:
+    metadata:
+      labels:
+        app: upi-os-cron
+    spec:
+      containers:
+        - image: ${IMAGE_NAME}:$COMMIT_SHA1
+          imagePullPolicy: Always
+          name: upi-os-cron
+          envFrom:
+            - secretRef:
+                name: upi-os-secret
+          env:
+            - name: CONTAINER_MODE
+              value: "scheduler"
+      imagePullSecrets:
+        - name: registry-secret
+

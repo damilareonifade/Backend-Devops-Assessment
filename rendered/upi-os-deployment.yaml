@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upi-os
+  labels:
+    app: upi-os
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upi-os
+  template:
+    metadata:
+      labels:
+        app: upi-os
+    spec:
+      containers:
+        - name: upi-os
+          image: upi-os:
+          ports:
+            - containerPort: 80
+          envFrom:
+            - secretRef:
+                name: upi-os-secret
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: upi-os-horizon
+  labels:
+    app: upi-os-horizon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: upi-os-horizon
+  template:
+    metadata:
+      labels:
+        app: upi-os-horizon
+    spec:
+      containers:
+        - name: horizon
+          image: upi-os:
+          command: ["sh", "-c"]
+          args:
+            - php artisan horizon
+          envFrom:
+            - secretRef:
+                name: upi-os-secret

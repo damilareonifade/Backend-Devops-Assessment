@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: upi-migration-1760818412
+  namespace: default
+  labels:
+    job-type: migration
+spec:
+  template:
+    metadata:
+      labels:
+        job-name: upi-migration-1760818412
+    spec:
+      containers:
+        - name: migrate
+          image: upi-os:latest
+          imagePullPolicy: Never   # 👈 Ensures Kubernetes uses the local Minikube image
+          command: ["sh", "-c"]
+          args:
+            - php artisan migrate --force && php artisan db:seed --force && php artisan optimize
+          envFrom:
+            - secretRef:
+                name: upi-os-secret
+      restartPolicy: Never
+  backoffLimit: 0

@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: upi-migration-${UNIQUE_ID}
+  namespace: default
+  labels:
+    job-type: migration
+spec:
+  template:
+    metadata:
+      labels:
+        job-name: upi-migration-${UNIQUE_ID}
+    spec:
+      containers:
+        - name: migrate
+          image: paketobuildpacks/php-nginx:latest
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - php artisan migrate --force && php artisan db:seed --force && php artisan optimize
+          envFrom:
+            - secretRef:
+                name: upi-os-secret   # contains DB credentials, APP_KEY, etc.
+          env:
+            - name: APP_ENV
+              value: production
+            - name: DB_HOST
+              value: mysql   # 👈 Reference to MySQL service below
+            - name: DB_PORT
+              value: "3306"
+      restartPolicy: Never
+  backoffLimit: 0

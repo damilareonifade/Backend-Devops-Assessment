@@ -1,0 +1,88 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: laravel-nginx-config
+  labels:
+    tier: backend
+data:
+  config: |
+    server {
+      listen 80;
+      index index.php index.html;
+      server_name _;
+      error_log /dev/stdout info;
+      access_log /dev/stdout;
+      root /var/www/app/public;
+
+      location /.git {
+         deny all;
+         return 403;
+      }
+
+      location / {
+          try_files  / /index.php?;
+          proxy_connect_timeout 3600s;
+          proxy_send_timeout 3600s;
+          proxy_read_timeout 3600s;
+      }
+
+      location /css/ {
+          alias /var/www/app/public/css/;
+          try_files  =404;
+          expires 7d;
+          add_header Cache-Control "public, max-age=604800, immutable";
+       }
+
+      location /js/ {
+          alias /var/www/app/public/js/;
+          try_files  =404;
+          expires 7d;
+          add_header Cache-Control "public, max-age=604800, immutable";
+       }
+     location /images/ {
+        alias /var/www/app/public/images/;
+        try_files  =404;
+    }
+
+
+      location ~ \.php$ {
+          try_files  =404;
+          fastcgi_split_path_info ^(.+\.php)(/.+)$;
+          fastcgi_connect_timeout 3600s;
+          fastcgi_send_timeout 3600s;
+          fastcgi_read_timeout 3600s;
+          fastcgi_pass unix:/var/run/php-fpm.sock;
+          fastcgi_index index.php;
+          include fastcgi_params;
+          fastcgi_param SCRIPT_FILENAME ;
+          fastcgi_param PATH_INFO ;
+      }
+
+      location ~* \.(jpg|jpeg|gif|png|css|js|ico|webp|tiff|ttf|svg)$ {
+          expires 5d;
+      }
+
+      location ^~ /.well-known {
+          try_files  / /index.php?;
+          allow all;
+          auth_basic off;
+      }
+      location @octane {
+          set  "";
+
+          if ( = /index.php) {
+              set  ?;
+          }
+
+          proxy_http_version 1.1;
+          proxy_set_header Host ;
+          proxy_set_header Scheme ;
+          proxy_set_header SERVER_PORT ;
+          proxy_set_header REMOTE_ADDR ;
+          proxy_set_header X-Forwarded-For ;
+          proxy_set_header Upgrade ;
+          proxy_set_header Connection ;
+
+          proxy_pass http://127.0.0.1:8000;
+      }
+    }

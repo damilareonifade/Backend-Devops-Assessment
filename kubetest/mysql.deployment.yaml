@@ -1,0 +1,69 @@
+---
+# Service for stable DNS
+apiVersion: v1
+kind: Service
+metadata:
+  name: mysql
+  namespace: default
+  labels:
+    app: mysql
+spec:
+  ports:
+    - port: 3306
+      name: mysql
+  clusterIP: None  # ensures each Pod gets a stable DNS identity
+  selector:
+    app: mysql
+---
+#StatefulSet — this is the "deployment" for MySQL
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mysql
+  namespace: default
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  serviceName: mysql
+  replicas: 1
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          env:
+            - name: MYSQL_DATABASE
+              value: upi
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: upi-os-secret
+                  key: DB_USERNAME
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: upi-os-secret
+                  key: DB_PASSWORD
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: upi-os-secret
+                  key: DB_ROOT_PASSWORD
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        resources:
+          requests:
+            storage: 5Gi
